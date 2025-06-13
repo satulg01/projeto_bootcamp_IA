@@ -1,3 +1,5 @@
+const API_URL = 'https://api-ia.roger-rodrigues.com/api/groq-chat';
+
 // Força o scroll para o topo em vários momentos
 function scrollToTop() {
     window.scrollTo({
@@ -56,8 +58,9 @@ chatHeader.addEventListener('click', () => {
 });
 
 // Send message
-function sendMessage() {
+async function sendMessage() {
     const message = chatInput.value.trim();
+
     if (message) {
         const messagesContainer = document.querySelector('.chat-messages');
         const messageElement = document.createElement('div');
@@ -70,6 +73,72 @@ function sendMessage() {
         messagesContainer.appendChild(messageElement);
         chatInput.value = '';
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            "question": message
+        })
+    });
+
+    const data = await response.json();
+
+    /* Expected response:
+
+    {
+        "success": true,
+        "data": {
+            "content": "Sim, a TechSolutions \u00e9 uma empresa de tecnologia. Ela se apresenta como uma empresa dedicada a transformar a presen\u00e7a digital das empresas atrav\u00e9s de solu\u00e7\u00f5es tecnol\u00f3gicas inovadoras, oferecendo uma variedade de servi\u00e7os, incluindo desenvolvimento web, aplicativos m\u00f3veis, solu\u00e7\u00f5es em intelig\u00eancia artificial, consultoria digital, suporte e manuten\u00e7\u00e3o, entre outros.",
+            "model": "llama-3.3-70b-versatile",
+            "finish_reason": "stop",
+            "usage": {
+            "prompt_tokens": 1583,
+            "completion_tokens": 87,
+            "total_tokens": 1670
+            }
+        }
+    }
+    */
+
+    if (data.success) {
+        const content = data.data.content;
+        const model = data.data.model;
+        const finishReason = data.data.finish_reason;
+        const usage = data.data.usage;
+
+        console.log(content, model, finishReason, usage);
+
+        const messagesContainer = document.querySelector('.chat-messages');
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message bot-message';
+        messageElement.innerHTML = `
+            <div class="message-content">
+                <p>${content}</p>
+            </div>
+        `;
+        messagesContainer.appendChild(messageElement);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        chatInput.value = '';
+    } else {
+        console.error('Erro ao enviar mensagem:', data);
+
+        const messagesContainer = document.querySelector('.chat-messages');
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message bot-message';
+        messageElement.innerHTML = `
+            <div class="message-content">
+                <p>Desculpe, não consegui processar sua mensagem. Por favor, tente novamente.</p>
+            </div>
+        `;
+        messagesContainer.appendChild(messageElement);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        chatInput.value = '';
     }
 }
 
